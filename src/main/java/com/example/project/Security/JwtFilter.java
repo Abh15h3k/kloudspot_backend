@@ -37,6 +37,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String username = null;
         String jwt = null;
+        UserDetails userDetails = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
@@ -44,15 +45,21 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (username != null) {
                 JwtToken jwtToken = jwtTokenRepository.findById(username).orElse(null);
+                userDetails = myUserDetailsService.loadUserByUsername(username);
                 if (jwtToken == null) {
                     username = null;
+                } else if (!jwtUtil.validateToken(jwtToken.getToken(), userDetails)) {
+                    httpServletResponse.setStatus(HttpStatus.FORBIDDEN.value());
+                    httpServletResponse.getOutputStream().flush();
+                    httpServletResponse.getOutputStream()
+                            .println("your token has expired please login again");
+                    return;
                 }
             }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = myUserDetailsService.loadUserByUsername(username);
-            if (jwtUtil.validateToken(jwt, userDetails) && userDetails.isEnabled()) {
+            if (jwtUtil.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 usernamePasswordAuthenticationToken

@@ -45,7 +45,17 @@ public class VehicleController {
 
         List<Vehicle> vehicles = vehicleRepository.findAll();
         vehicles.removeIf((vehicle) -> {
-            return (GeoLocation.distanceBetweenLocations(vehicleNearMe.getGeoLocation(), vehicle.getGeoLocation()) > vehicleNearMe.getRadius());
+            if (vehicle.getReservedBy() != null) {
+                return true;
+            }
+            double distance = GeoLocation.distanceBetweenLocations(vehicleNearMe.getGeoLocation(), vehicle.getGeoLocation());
+            if (distance <= vehicleNearMe.getRadius()) {
+                vehicle.setDistanceFromUser(distance);
+                return false;
+            } else {
+                return true;
+            }
+//            return ( > vehicleNearMe.getRadius());
         });
 
         if (vehicles.isEmpty()) {

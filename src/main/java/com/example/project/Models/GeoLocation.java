@@ -27,8 +27,6 @@ public class GeoLocation {
 
         double distance = c * GeoLocation.EARTH_RADIUS;
 
-        System.out.println(distance);
-
         return distance;
     }
 }

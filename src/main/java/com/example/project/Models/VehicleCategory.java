@@ -1,4 +1,6 @@
 package com.example.project.Models;
 
-public class VehicleCategory {
+public enum VehicleCategory {
+    CAR,
+    BIKE
 }
