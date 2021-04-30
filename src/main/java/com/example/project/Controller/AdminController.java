@@ -3,7 +3,7 @@ package com.example.project.Controller;
 import java.util.List;
 import java.util.Optional;
 
-import com.example.project.Models.AccountStatus;
+import com.example.project.Models.Forms.ModifyVehicleForm;
 import com.example.project.Models.GenericResponse;
 import com.example.project.Models.MyUser;
 import com.example.project.Models.Trip;
@@ -17,13 +17,7 @@ import com.example.project.Models.Repository.VehicleRepository;
 import com.example.project.Util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -85,6 +79,25 @@ public class AdminController {
         return ResponseEntity.ok(genericResponse);
     }
 
+    @PostMapping(path = "/vehicle/modify")
+    public ResponseEntity<GenericResponse> modifyVehicle(@RequestBody ModifyVehicleForm modifyVehicleForm) {
+        GenericResponse genericResponse = new GenericResponse();
+        Optional<Vehicle> vehicleOptional = vehicleRepository.findById(modifyVehicleForm.getRegistration());
+
+        if(vehicleOptional.isEmpty()) {
+            genericResponse.setError(true);
+            genericResponse.setErrorMessage("Vehicle does not exist.");
+        } else {
+            Vehicle vehicle = vehicleOptional.get();
+            vehicle.setCategory(modifyVehicleForm.getCategory());
+            vehicle.setMake(modifyVehicleForm.getMake());
+            vehicle.setModel(modifyVehicleForm.getModel());
+            vehicleRepository.save(vehicle);
+        }
+
+        return ResponseEntity.ok(genericResponse);
+    }
+
     @PostMapping(path = "/vehicle/remove/{registration}")
     public ResponseEntity<GenericResponse> removeVehicle(@PathVariable("registration") String registration) {
         GenericResponse genericResponse = new GenericResponse();
@@ -93,6 +106,9 @@ public class AdminController {
         if (vehicleOptional.isEmpty()) {
             genericResponse.setError(true);
             genericResponse.setErrorMessage("Vehicle does not exist.");
+        } else if(vehicleOptional.get().getReservedBy() != null) {
+            genericResponse.setError(true);
+            genericResponse.setErrorMessage("Vehicle is in Use.");
         } else {
             vehicleRepository.deleteById(registration);
             genericResponse.setBody("Vehicle Removed Successfully.");

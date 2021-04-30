@@ -165,10 +165,10 @@ public class HomeController {
             }
             myUserRepository.insert(myUser);
 
-//            final UserDetails userDetails = myUserDetailsService.loadUserByUsername(emailId);
-//            final String jwt = jwtUtil.generateToken(userDetails);
-//            genericResponse.setBody(jwt);
-//            jwtTokenRepository.insert(new JwtToken(emailId, jwt));
+            final UserDetails userDetails = myUserDetailsService.loadUserByUsername(emailId);
+            final String jwt = jwtUtil.generateToken(userDetails);
+            genericResponse.setBody(jwt);
+            jwtTokenRepository.insert(new JwtToken(emailId, jwt));
         }
         return ResponseEntity.ok(genericResponse);
     }

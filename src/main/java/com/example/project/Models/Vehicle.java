@@ -21,6 +21,8 @@ public class Vehicle {
     private String registration;
     private GeoLocation geoLocation;
     private VehicleCategory Category;
+    private String make;
+    private String model;
     @Indexed
     private String reservedBy;
 

@@ -35,16 +35,15 @@ public class SpringSecurityConfigurer extends WebSecurityConfigurerAdapter {
         http.csrf().disable()
                 .authorizeRequests()
                 .antMatchers("/login").permitAll()
-                // .antMatchers("/logout").permitAll()
                 .antMatchers("/register").permitAll()
                 .anyRequest().authenticated()
                 .and().sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
         http.cors();
+        http.addFilterBefore(corsFilter, SessionManagementFilter.class);
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-        http.addFilterBefore(corsFilter, SessionManagementFilter.class);
     }
 
     @Override
@@ -60,7 +59,6 @@ public class SpringSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
     @Bean
     public PasswordEncoder getPasswordEncoder() {
-//        return NoOpPasswordEncoder.getInstance();
         return new BCryptPasswordEncoder();
     }
 }

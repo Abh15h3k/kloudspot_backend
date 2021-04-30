@@ -8,11 +8,8 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.example.project.Models.DriverLicense;
-import com.example.project.Models.GenericResponse;
-import com.example.project.Models.MyUser;
-import com.example.project.Models.Trip;
-import com.example.project.Models.Vehicle;
+import com.example.project.Models.*;
+import com.example.project.Models.Forms.UpdateProfileForm;
 import com.example.project.Models.Repository.MyUserRepository;
 import com.example.project.Models.Repository.TripRepository;
 import com.example.project.Models.Repository.VehicleRepository;
@@ -21,13 +18,7 @@ import com.example.project.Util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -53,6 +44,12 @@ public class UserController {
         String jwt = authHeader.substring(7);
         String username = jwtUtil.extractUsername(jwt);
         MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
+
+        if(myUser.getAccountStatus() == AccountStatus.PROCESSING) {
+            genericResponse.setError(true);
+            genericResponse.setErrorMessage("Your account is still being processed. Please try again later.");
+            return ResponseEntity.ok(genericResponse);
+        }
 
         if (myUser.getReservedVehicle() != null) {
             genericResponse.setError(true);
@@ -220,6 +217,46 @@ public class UserController {
         MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
 
         genericResponse.setBody(myUser);
+        return ResponseEntity.ok(genericResponse);
+    }
+
+    @PostMapping(path = "/updateprofile")
+public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileForm updateProfileForm, @RequestParam(required = false) MultipartFile multipartFile, HttpServletRequest httpServletRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        String jwt = authHeader.substring(7);
+        String username = jwtUtil.extractUsername(jwt);
+        MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
+
+        System.out.println("Multipart File: " + !(multipartFile == null || multipartFile.isEmpty()));
+
+        if(!myUser.getAadhar().equals(updateProfileForm.getAadhar())) {
+            if(myUserRepository.findById(updateProfileForm.getAadhar()).isPresent()) {
+                genericResponse.setError(true);
+                genericResponse.setErrorMessage("Aadhar already exists.");
+            }
+        }
+
+        if(!myUser.getEmailId().equals(updateProfileForm.getEmailId())) {
+            if(myUserRepository.findByEmailId(updateProfileForm.getEmailId()) != null) {
+                genericResponse.setError(true);
+                genericResponse.setErrorMessage("EmailId already exists.");
+            }
+        }
+
+        if(genericResponse.isError()) {
+            return ResponseEntity.ok(genericResponse);
+        }
+
+        myUser.setFullName(updateProfileForm.getFullName());
+        myUser.setAadhar(updateProfileForm.getAadhar());
+        myUser.setEmailId(updateProfileForm.getEmailId());
+        DriverLicense driverLicense = myUser.getDriverLicense();
+        driverLicense.setLicenseNumber(updateProfileForm.getDriverLicenseNumber());
+        myUser.setDriverLicense(driverLicense);
+
+        myUserRepository.save(myUser);
+
         return ResponseEntity.ok(genericResponse);
     }
 }
