@@ -29,12 +29,7 @@ public class VehicleController {
         GenericResponse genericResponse = new GenericResponse();
         List<Vehicle> vehicles = vehicleRepository.findAll();
 
-        if (vehicles.isEmpty()) {
-            genericResponse.setError(true);
-            genericResponse.setErrorMessage("No vehicles");
-        } else {
-            genericResponse.setBody(vehicles);
-        }
+        genericResponse.setBody(vehicles);
 
         return ResponseEntity.ok(genericResponse);
     }

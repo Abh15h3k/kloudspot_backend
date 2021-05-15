@@ -11,10 +11,12 @@ import javax.servlet.http.HttpServletRequest;
 import com.example.project.Models.*;
 import com.example.project.Models.Forms.UpdateProfileForm;
 import com.example.project.Models.Repository.MyUserRepository;
+import com.example.project.Models.Repository.TransactionRepository;
 import com.example.project.Models.Repository.TripRepository;
 import com.example.project.Models.Repository.VehicleRepository;
 import com.example.project.Util.JwtUtil;
 
+import com.example.project.Util.Payment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,9 +30,11 @@ public class UserController {
 
     @Autowired private MyUserRepository myUserRepository;
     @Autowired private VehicleRepository vehicleRepository;
+    @Autowired private TripRepository tripRepository;
+    @Autowired private TransactionRepository transactionRepository;
     @Autowired private AuthenticationManager authenticationManager;
     @Autowired private JwtUtil jwtUtil;
-    @Autowired private TripRepository tripRepository;
+    @Autowired private Payment payment;
 
     @GetMapping(path = "")
     public ResponseEntity<GenericResponse> userCheck() {
@@ -89,18 +93,33 @@ public class UserController {
         return ResponseEntity.ok(genericResponse);
     }
 
-    @PostMapping(path = "/endtrip")
-    public ResponseEntity<GenericResponse> endTrip(HttpServletRequest httpServletRequest) {
+    @PostMapping(path = "/endtrip/{orderId}/{paymentId}")
+    public ResponseEntity<GenericResponse> endTrip(
+            @PathVariable(name = "orderId") String orderId,
+            @PathVariable(name = "paymentId") String paymentId,
+            HttpServletRequest httpServletRequest
+    ) {
         GenericResponse genericResponse = new GenericResponse();
         String authHeader = httpServletRequest.getHeader("Authorization");
         String jwt = authHeader.substring(7);
         String username = jwtUtil.extractUsername(jwt);
         MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
 
+        System.out.println("OrderId: " + orderId + ", PaymentId: " + paymentId);
+
         if (myUser.getReservedVehicle() == null) {
             genericResponse.setError(true);
             genericResponse.setErrorMessage("You currently do not have any reserved vehicle.");
         } else {
+            Transaction transaction = transactionRepository.findById(orderId).orElse(null);
+            if(!payment.completed(orderId)) {
+                System.out.println("!!!!!!!!!!!!!! PAYMENT NOT COMPLETED !!!!!!!!!!!!!!!");;
+            }
+            transaction.setPaymentId(paymentId);
+            transaction.setStatus(TransactionStatus.PAID);
+            transaction.setDatePaid(LocalDateTime.now());
+            transactionRepository.save(transaction);
+
             Vehicle vehicle = vehicleRepository.findById(myUser.getReservedVehicle()).orElse(null);
             vehicle.setReservedBy(null);
             myUser.setReservedVehicle(null);
@@ -109,6 +128,7 @@ public class UserController {
             System.out.println(trip);
             trip.setEndDateTime(LocalDateTime.now());
 
+            myUser.setOrderId(null);
             myUser.setActiveTrip(null);
             myUser.addTripId(trip.getTripId());
             vehicle.addTripId(trip.getTripId());
@@ -122,6 +142,44 @@ public class UserController {
 
         return ResponseEntity.ok(genericResponse);
     }
+
+    @PostMapping(value = "/pay")
+    public ResponseEntity<GenericResponse> pay(HttpServletRequest httpServletRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        String jwt = authHeader.substring(7);
+        String username = jwtUtil.extractUsername(jwt);
+        MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
+
+        String orderId = myUser.getOrderId();
+        if(orderId != null) {
+            genericResponse.setBody(orderId);
+        } else {
+            orderId = this.payment.createOrder(200); // amount in rupees
+            myUser.setOrderId(orderId);
+            Trip trip = myUser.getActiveTrip();
+            Transaction transaction = new Transaction(orderId, null, trip.getTripId(), myUser.getAadhar(), myUser.getReservedVehicle(), 200.0, LocalDateTime.now(), null, TransactionStatus.INITIATED);
+            this.transactionRepository.insert(transaction);
+            genericResponse.setBody(orderId);
+        }
+
+        return ResponseEntity.ok(genericResponse);
+    }
+
+//    @PostMapping(value = "/verifypayment/{orderId}")
+//    public ResponseEntity<GenericResponse> verifyPayment(@PathVariable(name = "orderId") String orderId, HttpServletRequest httpServletRequest) {
+//        GenericResponse genericResponse = new GenericResponse();
+//        String authHeader = httpServletRequest.getHeader("Authorization");
+//        String jwt = authHeader.substring(7);
+//        String username = jwtUtil.extractUsername(jwt);
+//        MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
+//
+//
+//        genericResponse.setBody(payment.completed(orderId));
+//
+//        return ResponseEntity.ok(genericResponse);
+//    }
 
     @PostMapping(path = "/uploaddl")
     public ResponseEntity<GenericResponse> uploadDl(
@@ -259,4 +317,6 @@ public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileF
 
         return ResponseEntity.ok(genericResponse);
     }
+
+
 }

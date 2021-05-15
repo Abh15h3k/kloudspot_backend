@@ -34,6 +34,9 @@ public class MyUser {
     @Indexed
     private Trip activeTrip;
     private List<String> tripIds;
+    private List<String> transactions;
+
+    private String orderId;
 
     public void addTripId(String tripId) {
         this.tripIds.add(tripId);

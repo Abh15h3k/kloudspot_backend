@@ -18,11 +18,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 
+import javax.lang.model.type.ArrayType;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
@@ -155,7 +159,7 @@ public class HomeController {
         } else {
 
             MyUser myUser = new MyUser(aadhar, fullName, emailId, new BCryptPasswordEncoder().encode(password), new DriverLicense(dlNumber, null),
-                    Arrays.asList(UserRole.USER), AccountStatus.PROCESSING, null, null, new ArrayList<>());
+                    Arrays.asList(UserRole.USER), AccountStatus.PROCESSING, null, null, new ArrayList<>(), new ArrayList<>(), null);
             try {
                 DriverLicense driverLicense = myUser.getDriverLicense();
                 driverLicense.setImageData(dlImage.getBytes());

@@ -1,3 +1,0 @@
-{
-  "java.jdt.ls.vmargs": "-javaagent:/usr/local/share/lombok/lombok.jar -javaagent:\"/home/abhishek/.config/coc/extensions/node_modules/coc-java-lombok/jar/lombok.jar\""
-}

@@ -30,6 +30,7 @@ public class Vehicle {
     private double distanceFromUser;
 
     private List<String> tripIds = new ArrayList<>();
+    private List<String> transactions = new ArrayList<>();
 
     public void addTripId(String tripId) {
         this.tripIds.add(tripId);

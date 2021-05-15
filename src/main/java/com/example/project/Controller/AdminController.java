@@ -1,13 +1,12 @@
 package com.example.project.Controller;
 
+import java.io.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
+import com.example.project.Models.*;
 import com.example.project.Models.Forms.ModifyVehicleForm;
-import com.example.project.Models.GenericResponse;
-import com.example.project.Models.MyUser;
-import com.example.project.Models.Trip;
-import com.example.project.Models.Vehicle;
 import com.example.project.Models.Forms.AddVehicleForm;
 import com.example.project.Models.Forms.UpdateAccountStatusForm;
 import com.example.project.Models.Repository.MyUserRepository;
@@ -18,6 +17,7 @@ import com.example.project.Util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -33,6 +33,45 @@ public class AdminController {
     @Autowired
     private TripRepository tripRepository;
     @Autowired private JwtUtil jwtUtil;
+
+    final String Digits     = "(\\p{Digit}+)";
+    final String HexDigits  = "(\\p{XDigit}+)";
+    // an exponent is 'e' or 'E' followed by an optionally
+// signed decimal integer.
+    final String Exp        = "[eE][+-]?"+Digits;
+    final String fpRegex    =
+            ("[\\x00-\\x20]*"+ // Optional leading "whitespace"
+                    "[+-]?(" +         // Optional sign character
+                    "NaN|" +           // "NaN" string
+                    "Infinity|" +      // "Infinity" string
+
+                    // A decimal floating-point string representing a finite positive
+                    // number without a leading sign has at most five basic pieces:
+                    // Digits . Digits ExponentPart FloatTypeSuffix
+                    //
+                    // Since this method allows integer-only strings as input
+                    // in addition to strings of floating-point literals, the
+                    // two sub-patterns below are simplifications of the grammar
+                    // productions from the Java Language Specification, 2nd
+                    // edition, section 3.10.2.
+
+                    // Digits ._opt Digits_opt ExponentPart_opt FloatTypeSuffix_opt
+                    "((("+Digits+"(\\.)?("+Digits+"?)("+Exp+")?)|"+
+
+                    // . Digits ExponentPart_opt FloatTypeSuffix_opt
+                    "(\\.("+Digits+")("+Exp+")?)|"+
+
+                    // Hexadecimal strings
+                    "((" +
+                    // 0[xX] HexDigits ._opt BinaryExponent FloatTypeSuffix_opt
+                    "(0[xX]" + HexDigits + "(\\.)?)|" +
+
+                    // 0[xX] HexDigits_opt . HexDigits BinaryExponent FloatTypeSuffix_opt
+                    "(0[xX]" + HexDigits + "?(\\.)" + HexDigits + ")" +
+
+                    ")[pP][+-]?" + Digits + "))" +
+                    "[fFdD]?))" +
+                    "[\\x00-\\x20]*");// Optional trailing "whitespace"
 
     @GetMapping(path = "/")
     public ResponseEntity<GenericResponse> adminCheck() {
@@ -70,10 +109,77 @@ public class AdminController {
             vehicle.setRegistration(addVehicleForm.getRegistration());
             vehicle.setGeoLocation(addVehicleForm.getGeoLocation());
             vehicle.setCategory(addVehicleForm.getCategory());
+            vehicle.setMake(addVehicleForm.getMake());
+            vehicle.setModel(addVehicleForm.getModel());
 
             vehicleRepository.insert(vehicle);
 
             genericResponse.setBody("Vehicle Added Successfully.");
+        }
+
+        return ResponseEntity.ok(genericResponse);
+    }
+
+    @PostMapping(path = "/vehicle/bulkAdd")
+    public ResponseEntity<GenericResponse> bulkAddVehicles(
+            @RequestParam("multipartFile") MultipartFile multipartFile
+    ) {
+        GenericResponse genericResponse = new GenericResponse();
+        int totalVehicles = 0;
+        int vehiclesAdded = 0;
+        try {
+            InputStream inputStream = multipartFile.getInputStream();
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            String line = null;
+            while ((line = bufferedReader.readLine()) != null) {
+                if(line.startsWith("#")) {
+                    continue;
+                }
+                ++totalVehicles;
+
+                String[] tokens = line.split(",");
+                if(tokens.length != 6) {
+                    continue;
+                }
+
+                if(vehicleRepository.findById(tokens[0]).isPresent()) {
+                    continue;
+                }
+
+                if(!Pattern.matches(fpRegex, tokens[1]) || !Pattern.matches(fpRegex, tokens[2])) {
+                    continue;
+                }
+
+                boolean validEnum = false;
+                for(VehicleCategory cat : VehicleCategory.values()) {
+                    if(tokens[3].equals(cat.name())) {
+                        validEnum = true;
+                        break;
+                    }
+                }
+
+                if(!validEnum) {
+                    continue;
+                }
+
+                GeoLocation geoLocation = new GeoLocation(Double.parseDouble(tokens[1]), Double.parseDouble(tokens[2]));
+
+                Vehicle vehicle = new Vehicle();
+                vehicle.setRegistration(tokens[0]);
+                vehicle.setGeoLocation(geoLocation);
+                vehicle.setCategory(VehicleCategory.valueOf(tokens[3]));
+                vehicle.setMake(tokens[4]);
+                vehicle.setModel(tokens[5]);
+
+                this.vehicleRepository.insert(vehicle);
+                ++vehiclesAdded;
+            }
+            genericResponse.setBody("Number of vehicles received: " + totalVehicles + "\nNumber of vehicles added: " + vehiclesAdded);
+        } catch (IOException ioException) {
+            genericResponse.setError(true);
+            genericResponse.setErrorMessage("Server Encountered an error reading the file. " + ioException.getMessage());
+            return  ResponseEntity.ok(genericResponse);
         }
 
         return ResponseEntity.ok(genericResponse);

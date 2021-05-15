@@ -14,4 +14,6 @@ public class AddVehicleForm {
     private String registration;
     private VehicleCategory category;
     private GeoLocation geoLocation;
+    private String make;
+    private String model;
 }
