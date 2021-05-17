@@ -9,6 +9,7 @@ import com.example.project.Models.*;
 import com.example.project.Models.Forms.ModifyVehicleForm;
 import com.example.project.Models.Forms.AddVehicleForm;
 import com.example.project.Models.Forms.UpdateAccountStatusForm;
+import com.example.project.Models.Forms.UpdateAccountsStatusForm;
 import com.example.project.Models.Repository.MyUserRepository;
 import com.example.project.Models.Repository.TripRepository;
 import com.example.project.Models.Repository.VehicleRepository;
@@ -78,8 +79,36 @@ public class AdminController {
         return ResponseEntity.ok(new GenericResponse(false, "", "Welcome Admin."));
     }
 
+    @PostMapping(path = "/updateaccounts")
+    public ResponseEntity<GenericResponse> updateAccounts(@RequestBody UpdateAccountsStatusForm updateAccountsStatusForm) {
+        GenericResponse genericResponse = new GenericResponse();
+        boolean minSuccess = false;
+//        String[]  aadhars = updateAccountsStatusForm.getAadhar();
+//        AccountStatus[]  statuses = updateAccountsStatusForm.getStatus();
+        MyUser[] updatedUsers = updateAccountsStatusForm.getUsers();
+        for(int i = 0; i < updatedUsers.length; ++i) {
+            Optional<MyUser> myUserOptional = myUserRepository.findById(updatedUsers[i].getAadhar());
+            if (myUserOptional.isPresent()) {
+                MyUser myUser = myUserOptional.get();
+                System.out.print(myUser.getAadhar() + " Before: " + myUser.getAccountStatus());
+                myUser.setAccountStatus(updatedUsers[i].getAccountStatus());
+                System.out.println(" After: " + myUser.getAccountStatus());
+                myUserRepository.save(myUser);
+                minSuccess = true;
+            }
+        }
+
+        if(!minSuccess) {
+            genericResponse.setError(true);
+            genericResponse.setErrorMessage("none of the users were found.");
+        } else {
+            genericResponse.setBody("Users updated successfully.");
+        }
+        return ResponseEntity.ok(genericResponse);
+    }
+
     @PostMapping(path = "/updateaccount")
-    public ResponseEntity<GenericResponse> verifyUser(@RequestBody UpdateAccountStatusForm updateAccountStatusForm) {
+    public ResponseEntity<GenericResponse> updateAccount(@RequestBody UpdateAccountStatusForm updateAccountStatusForm) {
         GenericResponse genericResponse = new GenericResponse();
         Optional<MyUser> myUserOptional = myUserRepository.findById(updateAccountStatusForm.getAadhar());
 

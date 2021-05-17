@@ -1,14 +1,13 @@
 package com.example.project.Controller;
 
 import com.example.project.Models.*;
-import com.example.project.Models.Forms.RegisterForm;
+import com.example.project.Models.Forms.AuthRequest;
 import com.example.project.Models.Repository.JwtTokenRepository;
 import com.example.project.Models.Repository.MyUserRepository;
 import com.example.project.Util.JwtUtil;
 import com.example.project.Util.MyUserDetailsService;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,15 +17,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 
-import javax.lang.model.type.ArrayType;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController

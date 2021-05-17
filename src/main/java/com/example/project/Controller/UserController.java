@@ -161,6 +161,7 @@ public class UserController {
             Trip trip = myUser.getActiveTrip();
             Transaction transaction = new Transaction(orderId, null, trip.getTripId(), myUser.getAadhar(), myUser.getReservedVehicle(), 200.0, LocalDateTime.now(), null, TransactionStatus.INITIATED);
             this.transactionRepository.insert(transaction);
+            this.myUserRepository.save(myUser);
             genericResponse.setBody(orderId);
         }
 
@@ -203,7 +204,6 @@ public class UserController {
         try {
             DriverLicense driverLicense = myUser.getDriverLicense();
             driverLicense.setImageData(file.getBytes());
-            System.out.println(file.getBytes().length);
             myUser.setDriverLicense(driverLicense);
         } catch (IOException ioException) {
 
@@ -228,6 +228,24 @@ public class UserController {
         }
 
         genericResponse.setBody(myUser.getDriverLicense().getImageData());
+        return ResponseEntity.ok(genericResponse);
+    }
+
+    @GetMapping(path = "/getrecenttrips")
+    public ResponseEntity<GenericResponse> getRecentTrips(HttpServletRequest httpServletRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        String jwt = authHeader.substring(7);
+        String username = jwtUtil.extractUsername(jwt);
+        MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
+
+        List<Trip> trips = tripRepository.findAllByUserAadhar(myUser.getAadhar());
+        if(trips.size() > 5) {
+            trips = trips.subList(0, 4);
+        }
+
+        genericResponse.setBody(trips);
+
         return ResponseEntity.ok(genericResponse);
     }
 

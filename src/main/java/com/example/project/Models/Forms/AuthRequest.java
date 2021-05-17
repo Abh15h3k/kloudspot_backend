@@ -1,4 +1,4 @@
-package com.example.project.Models;
+package com.example.project.Models.Forms;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,5 +13,4 @@ public class AuthRequest {
 
     private String username;
     private String password;
-    private String image;
 }
