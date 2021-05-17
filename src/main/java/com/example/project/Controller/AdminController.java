@@ -90,9 +90,7 @@ public class AdminController {
             Optional<MyUser> myUserOptional = myUserRepository.findById(updatedUsers[i].getAadhar());
             if (myUserOptional.isPresent()) {
                 MyUser myUser = myUserOptional.get();
-                System.out.print(myUser.getAadhar() + " Before: " + myUser.getAccountStatus());
                 myUser.setAccountStatus(updatedUsers[i].getAccountStatus());
-                System.out.println(" After: " + myUser.getAccountStatus());
                 myUserRepository.save(myUser);
                 minSuccess = true;
             }
@@ -223,6 +221,7 @@ public class AdminController {
             genericResponse.setError(true);
             genericResponse.setErrorMessage("Vehicle does not exist.");
         } else {
+            genericResponse.setBody("Vehicle modified successfully.");
             Vehicle vehicle = vehicleOptional.get();
             vehicle.setCategory(modifyVehicleForm.getCategory());
             vehicle.setMake(modifyVehicleForm.getMake());
