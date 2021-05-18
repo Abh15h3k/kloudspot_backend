@@ -2,7 +2,7 @@ package com.example.project.Util;
 
 import com.example.project.Models.MyUser;
 import com.example.project.Models.MyUserDetails;
-import com.example.project.Models.Repository.MyUserRepository;
+import com.example.project.Models.Dao.MyUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

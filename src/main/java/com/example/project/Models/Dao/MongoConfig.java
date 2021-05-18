@@ -1,4 +1,4 @@
-package com.example.project.Models.Repository;
+package com.example.project.Models.Dao;
 
 import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 

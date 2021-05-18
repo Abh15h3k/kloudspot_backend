@@ -2,7 +2,6 @@ package com.example.project.Controller;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,10 +9,10 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.example.project.Models.*;
 import com.example.project.Models.Forms.UpdateProfileForm;
-import com.example.project.Models.Repository.MyUserRepository;
-import com.example.project.Models.Repository.TransactionRepository;
-import com.example.project.Models.Repository.TripRepository;
-import com.example.project.Models.Repository.VehicleRepository;
+import com.example.project.Models.Dao.MyUserRepository;
+import com.example.project.Models.Dao.TransactionRepository;
+import com.example.project.Models.Dao.TripRepository;
+import com.example.project.Models.Dao.VehicleRepository;
 import com.example.project.Util.JwtUtil;
 
 import com.example.project.Util.Payment;
@@ -241,7 +240,7 @@ public class UserController {
 
         List<Trip> trips = tripRepository.findAllByUserAadhar(myUser.getAadhar());
         if(trips.size() > 5) {
-            trips = trips.subList(0, 4);
+            trips = trips.subList(0, 5);
         }
 
         genericResponse.setBody(trips);

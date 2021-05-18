@@ -1,20 +1,11 @@
 package com.example.project;
 
-import com.example.project.Models.AccountStatus;
-import com.example.project.Models.DriverLicense;
-import com.example.project.Models.GeoLocation;
-import com.example.project.Models.MyUser;
-import com.example.project.Models.Repository.MyUserRepository;
-import com.example.project.Models.Repository.VehicleRepository;
-import com.example.project.Models.UserRole;
-import com.example.project.Models.Vehicle;
+import com.example.project.Models.Dao.MyUserRepository;
+import com.example.project.Models.Dao.VehicleRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 @Component
 public class ProjectRunner implements CommandLineRunner {

@@ -6,7 +6,7 @@ import com.example.project.Models.GenericResponse;
 import com.example.project.Models.GeoLocation;
 import com.example.project.Models.Vehicle;
 import com.example.project.Models.Forms.VehicleNearMe;
-import com.example.project.Models.Repository.VehicleRepository;
+import com.example.project.Models.Dao.VehicleRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

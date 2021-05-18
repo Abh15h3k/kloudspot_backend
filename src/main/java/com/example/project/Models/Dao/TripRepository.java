@@ -1,4 +1,4 @@
-package com.example.project.Models.Repository;
+package com.example.project.Models.Dao;
 
 import java.util.List;
 

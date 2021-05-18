@@ -2,8 +2,8 @@ package com.example.project.Controller;
 
 import com.example.project.Models.*;
 import com.example.project.Models.Forms.AuthRequest;
-import com.example.project.Models.Repository.JwtTokenRepository;
-import com.example.project.Models.Repository.MyUserRepository;
+import com.example.project.Models.Dao.JwtTokenRepository;
+import com.example.project.Models.Dao.MyUserRepository;
 import com.example.project.Util.JwtUtil;
 import com.example.project.Util.MyUserDetailsService;
 import io.jsonwebtoken.ExpiredJwtException;

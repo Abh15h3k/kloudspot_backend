@@ -1,18 +1,20 @@
 package com.example.project.Controller;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 import com.example.project.Models.*;
+import com.example.project.Models.Dao.TripTemplate;
 import com.example.project.Models.Forms.ModifyVehicleForm;
 import com.example.project.Models.Forms.AddVehicleForm;
 import com.example.project.Models.Forms.UpdateAccountStatusForm;
 import com.example.project.Models.Forms.UpdateAccountsStatusForm;
-import com.example.project.Models.Repository.MyUserRepository;
-import com.example.project.Models.Repository.TripRepository;
-import com.example.project.Models.Repository.VehicleRepository;
+import com.example.project.Models.Dao.MyUserRepository;
+import com.example.project.Models.Dao.TripRepository;
+import com.example.project.Models.Dao.VehicleRepository;
 
 import com.example.project.Util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,8 @@ public class AdminController {
     @Autowired
     private TripRepository tripRepository;
     @Autowired private JwtUtil jwtUtil;
+
+    @Autowired private TripTemplate tripTemplate;
 
     final String Digits     = "(\\p{Digit}+)";
     final String HexDigits  = "(\\p{XDigit}+)";
@@ -298,4 +302,27 @@ public class AdminController {
     public ResponseEntity<GenericResponse> getTripCount() {
         return ResponseEntity.ok(new GenericResponse(false, "" , tripRepository.count()));
     }
+
+    @GetMapping(path = "/tripsdata")
+    public ResponseEntity<GenericResponse> getTripsData() {
+        GenericResponse genericResponse = new GenericResponse();
+        long lessThanTwo = this.tripTemplate.countTripsWithDurationLessThan(2);
+        long lessThanFour = this.tripTemplate.countTripsWithDurationLessThan(4);
+        long lessThanEight = this.tripTemplate.countTripsWithDurationLessThan(8);
+        long lessThanSixteen = this.tripTemplate.countTripsWithDurationLessThan(16);
+        long totalTrips = this.tripRepository.count();
+
+        TripsData tripsData = new TripsData(
+                lessThanTwo,
+                lessThanFour - lessThanTwo,
+                lessThanEight - lessThanFour,
+                lessThanSixteen - lessThanEight,
+                totalTrips - lessThanSixteen);
+
+        genericResponse.setBody(tripsData);
+        System.out.println(myUserRepository.countUsersJoinedOnMonth(2021, 5).getUniqueMappedResult().getCount());
+        return ResponseEntity.ok(genericResponse);
+    }
+
+
 }

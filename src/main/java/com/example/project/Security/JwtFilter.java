@@ -1,9 +1,10 @@
 package com.example.project.Security;
 
 import com.example.project.Models.JwtToken;
-import com.example.project.Models.Repository.JwtTokenRepository;
+import com.example.project.Models.Dao.JwtTokenRepository;
 import com.example.project.Util.JwtUtil;
 import com.example.project.Util.MyUserDetailsService;
+import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -41,7 +42,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
-            username = jwtUtil.extractUsername(jwt);
+            try {
+                username = jwtUtil.extractUsername(jwt);
+            } catch (ExpiredJwtException expiredJwtException) {
+                System.out.println("Caught expired jwt exception.");
+            }
 
             if (username != null) {
                 JwtToken jwtToken = jwtTokenRepository.findById(username).orElse(null);
