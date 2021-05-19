@@ -2,6 +2,8 @@ package com.example.project.Controller;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -240,8 +242,10 @@ public class UserController {
 
         List<Trip> trips = tripRepository.findAllByUserAadhar(myUser.getAadhar());
         if(trips.size() > 5) {
-            trips = trips.subList(0, 5);
+            trips = trips.subList(trips.size() - 5, trips.size());
         }
+
+        Collections.reverse(trips);
 
         genericResponse.setBody(trips);
 
@@ -257,6 +261,7 @@ public class UserController {
         MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
 
         List<Trip> trips = tripRepository.findAllByUserAadhar(myUser.getAadhar());
+        Collections.reverse(trips);
 
         genericResponse.setBody(trips);
 

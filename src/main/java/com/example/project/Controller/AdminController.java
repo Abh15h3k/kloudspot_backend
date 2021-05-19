@@ -1,20 +1,16 @@
 package com.example.project.Controller;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.time.YearMonth;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import com.example.project.Models.*;
-import com.example.project.Models.Dao.TripTemplate;
+import com.example.project.Models.Dao.*;
 import com.example.project.Models.Forms.ModifyVehicleForm;
 import com.example.project.Models.Forms.AddVehicleForm;
 import com.example.project.Models.Forms.UpdateAccountStatusForm;
 import com.example.project.Models.Forms.UpdateAccountsStatusForm;
-import com.example.project.Models.Dao.MyUserRepository;
-import com.example.project.Models.Dao.TripRepository;
-import com.example.project.Models.Dao.VehicleRepository;
 
 import com.example.project.Util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +32,7 @@ public class AdminController {
     @Autowired
     private TripRepository tripRepository;
     @Autowired private JwtUtil jwtUtil;
+    @Autowired private TransactionRepository transactionRepository;
 
     @Autowired private TripTemplate tripTemplate;
 
@@ -259,6 +256,7 @@ public class AdminController {
     public ResponseEntity<GenericResponse> getTripsForVehicle(@PathVariable("registration") String registration) {
         GenericResponse genericResponse = new GenericResponse();
         List<Trip> trips = tripRepository.findAllByVehicleRegistration(registration);
+        Collections.reverse(trips);
 
         genericResponse.setBody(trips);
 
@@ -269,6 +267,7 @@ public class AdminController {
     public ResponseEntity<GenericResponse> getTripsForUser(@PathVariable("aadhar") String aadhar) {
         GenericResponse genericResponse = new GenericResponse();
         List<Trip> trips = tripRepository.findAllByUserAadhar(aadhar);
+        Collections.reverse(trips);
 
         genericResponse.setBody(trips);
 
@@ -306,6 +305,22 @@ public class AdminController {
     @GetMapping(path = "/tripsdata")
     public ResponseEntity<GenericResponse> getTripsData() {
         GenericResponse genericResponse = new GenericResponse();
+
+        YearMonth yearMonth = YearMonth.now();
+        yearMonth = yearMonth.minusMonths(11);
+        ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), null);
+        for(int i = 0; i < 12; ++i) {
+            Count count = tripRepository.countTripsInYearMonth(yearMonth.getYear(), yearMonth.getMonthValue()).getUniqueMappedResult();
+            chartData.addYearMonthsCount(yearMonth, count != null ? count.getCount(): 0);
+            yearMonth = yearMonth.plusMonths(1);
+        }
+        genericResponse.setBody(chartData);
+        return ResponseEntity.ok(genericResponse);
+    }
+
+    @GetMapping(path = "/tripsdurationdata")
+    public ResponseEntity<GenericResponse> getTripsDurationData() {
+        GenericResponse genericResponse = new GenericResponse();
         long lessThanTwo = this.tripTemplate.countTripsWithDurationLessThan(2);
         long lessThanFour = this.tripTemplate.countTripsWithDurationLessThan(4);
         long lessThanEight = this.tripTemplate.countTripsWithDurationLessThan(8);
@@ -320,9 +335,47 @@ public class AdminController {
                 totalTrips - lessThanSixteen);
 
         genericResponse.setBody(tripsData);
-        System.out.println(myUserRepository.countUsersJoinedOnMonth(2021, 5).getUniqueMappedResult().getCount());
         return ResponseEntity.ok(genericResponse);
     }
 
+    @GetMapping(path = "/userdata")
+    public ResponseEntity<GenericResponse> getUserData() {
+        GenericResponse genericResponse = new GenericResponse();
 
+        YearMonth yearMonth = YearMonth.now();
+        yearMonth = yearMonth.minusMonths(11);
+        ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        long sum = 0;
+        for(int i = 0; i < 12; ++i) {
+            Count count = myUserRepository.countUsersJoinedOnMonth(yearMonth.getYear(), yearMonth.getMonthValue()).getUniqueMappedResult();
+            sum += (count != null ? count.getCount() : 0);
+            chartData.addPoint(yearMonth, sum, count != null ? count.getCount() : 0);
+            yearMonth = yearMonth.plusMonths(1);
+        }
+        genericResponse.setBody(chartData);
+
+        return ResponseEntity.ok(genericResponse);
+    }
+
+    @GetMapping(path = "/revenuedata")
+    public ResponseEntity<GenericResponse> getRevenueData() {
+        GenericResponse genericResponse = new GenericResponse();
+
+        YearMonth yearMonth = YearMonth.now();
+        yearMonth = yearMonth.minusMonths(11);
+        ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        for(int i = 0; i < 12; ++i) {
+            List<Transaction> transactions = transactionRepository.getTransactionsOffYearMonth(yearMonth.getYear(), yearMonth.getMonthValue());
+            long totalRevenue = 0;
+            for(int j = 0; j < transactions.size(); j++) {
+                totalRevenue += transactions.get(j).getAmount();
+            }
+
+            chartData.addYearMonthsCount(yearMonth, totalRevenue);
+            yearMonth = yearMonth.plusMonths(1);
+        }
+        genericResponse.setBody(chartData);
+
+        return ResponseEntity.ok(genericResponse);
+    }
 }
