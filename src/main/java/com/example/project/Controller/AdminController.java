@@ -7,10 +7,7 @@ import java.util.regex.Pattern;
 
 import com.example.project.Models.*;
 import com.example.project.Models.Dao.*;
-import com.example.project.Models.Forms.ModifyVehicleForm;
-import com.example.project.Models.Forms.AddVehicleForm;
-import com.example.project.Models.Forms.UpdateAccountStatusForm;
-import com.example.project.Models.Forms.UpdateAccountsStatusForm;
+import com.example.project.Models.Forms.*;
 
 import com.example.project.Util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -302,30 +299,63 @@ public class AdminController {
         return ResponseEntity.ok(new GenericResponse(false, "" , tripRepository.count()));
     }
 
-    @GetMapping(path = "/tripsdata")
-    public ResponseEntity<GenericResponse> getTripsData() {
+    @PostMapping(path = "/tripsdata")
+    public ResponseEntity<GenericResponse> getTripsData(@RequestBody ChartRange chartRange) {
         GenericResponse genericResponse = new GenericResponse();
 
-        YearMonth yearMonth = YearMonth.now();
-        yearMonth = yearMonth.minusMonths(11);
-        ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), null);
-        for(int i = 0; i < 12; ++i) {
-            Count count = tripRepository.countTripsInYearMonth(yearMonth.getYear(), yearMonth.getMonthValue()).getUniqueMappedResult();
-            chartData.addYearMonthsCount(yearMonth, count != null ? count.getCount(): 0);
-            yearMonth = yearMonth.plusMonths(1);
+        if(chartRange.ZeroGap()) {
+            YearMonth yearMonth = YearMonth.now();
+            yearMonth = yearMonth.minusMonths(11);
+            ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), null);
+            for (int i = 0; i < 12; ++i) {
+                Count count = tripRepository.countTripsInYearMonth(yearMonth.getYear(), yearMonth.getMonthValue()).getUniqueMappedResult();
+                chartData.addYearMonthsCount(yearMonth, count != null ? count.getCount() : 0);
+                yearMonth = yearMonth.plusMonths(1);
+            }
+            genericResponse.setBody(chartData);
+        } else {
+            YearMonth yearMonth = YearMonth.of(chartRange.getStartYear(), chartRange.getStartMonth());
+            YearMonth endYearMonth = YearMonth.of(chartRange.getEndYear(), chartRange.getEndMonth());
+            ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), null);
+            while(!yearMonth.isAfter(endYearMonth)) {
+                Count count = tripRepository.countTripsInYearMonth(yearMonth.getYear(), yearMonth.getMonthValue()).getUniqueMappedResult();
+                chartData.addYearMonthsCount(yearMonth, count != null ? count.getCount() : 0);
+
+                yearMonth = yearMonth.plusMonths(1);
+            }
+            genericResponse.setBody(chartData);
         }
-        genericResponse.setBody(chartData);
         return ResponseEntity.ok(genericResponse);
     }
 
-    @GetMapping(path = "/tripsdurationdata")
-    public ResponseEntity<GenericResponse> getTripsDurationData() {
+    @PostMapping(path = "/tripsdurationdata")
+    public ResponseEntity<GenericResponse> getTripsDurationData(@RequestBody ChartRange chartRange) {
         GenericResponse genericResponse = new GenericResponse();
-        long lessThanTwo = this.tripTemplate.countTripsWithDurationLessThan(2);
-        long lessThanFour = this.tripTemplate.countTripsWithDurationLessThan(4);
-        long lessThanEight = this.tripTemplate.countTripsWithDurationLessThan(8);
-        long lessThanSixteen = this.tripTemplate.countTripsWithDurationLessThan(16);
-        long totalTrips = this.tripRepository.count();
+
+        long lessThanTwo;
+        long lessThanFour;
+        long lessThanEight;
+        long lessThanSixteen;
+        long totalTrips;
+
+        if(chartRange.ZeroGap()) {
+            lessThanTwo = this.tripTemplate.countTripsWithDurationLessThan(2);
+            lessThanFour = this.tripTemplate.countTripsWithDurationLessThan(4);
+            lessThanEight = this.tripTemplate.countTripsWithDurationLessThan(8);
+            lessThanSixteen = this.tripTemplate.countTripsWithDurationLessThan(16);
+            totalTrips = this.tripRepository.count();
+
+        } else {
+            YearMonth yearMonth = YearMonth.of(chartRange.getStartYear(), chartRange.getStartMonth());
+            YearMonth endYearMonth = YearMonth.of(chartRange.getEndYear(), chartRange.getEndMonth());
+
+            List<Trip> trips = this.tripRepository.tripsInYearMonth(yearMonth.getYear(), endYearMonth.getYear(), yearMonth.getMonthValue(), endYearMonth.getMonthValue());
+            lessThanTwo = trips.stream().filter(trip -> trip.duration() < 2).count();
+            lessThanFour = trips.stream().filter(trip -> trip.duration() < 4).count();
+            lessThanEight = trips.stream().filter(trip -> trip.duration() < 8).count();
+            lessThanSixteen = trips.stream().filter(trip -> trip.duration() < 16).count();
+            totalTrips = trips.size();
+        }
 
         TripsData tripsData = new TripsData(
                 lessThanTwo,
@@ -335,47 +365,80 @@ public class AdminController {
                 totalTrips - lessThanSixteen);
 
         genericResponse.setBody(tripsData);
-        return ResponseEntity.ok(genericResponse);
-    }
-
-    @GetMapping(path = "/userdata")
-    public ResponseEntity<GenericResponse> getUserData() {
-        GenericResponse genericResponse = new GenericResponse();
-
-        YearMonth yearMonth = YearMonth.now();
-        yearMonth = yearMonth.minusMonths(11);
-        ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        long sum = 0;
-        for(int i = 0; i < 12; ++i) {
-            Count count = myUserRepository.countUsersJoinedOnMonth(yearMonth.getYear(), yearMonth.getMonthValue()).getUniqueMappedResult();
-            sum += (count != null ? count.getCount() : 0);
-            chartData.addPoint(yearMonth, sum, count != null ? count.getCount() : 0);
-            yearMonth = yearMonth.plusMonths(1);
-        }
-        genericResponse.setBody(chartData);
 
         return ResponseEntity.ok(genericResponse);
     }
 
-    @GetMapping(path = "/revenuedata")
-    public ResponseEntity<GenericResponse> getRevenueData() {
+    @PostMapping(path = "/userdata")
+    public ResponseEntity<GenericResponse> getUserData(@RequestBody ChartRange chartRange) {
         GenericResponse genericResponse = new GenericResponse();
+        System.out.println(chartRange);
 
-        YearMonth yearMonth = YearMonth.now();
-        yearMonth = yearMonth.minusMonths(11);
-        ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        for(int i = 0; i < 12; ++i) {
-            List<Transaction> transactions = transactionRepository.getTransactionsOffYearMonth(yearMonth.getYear(), yearMonth.getMonthValue());
-            long totalRevenue = 0;
-            for(int j = 0; j < transactions.size(); j++) {
-                totalRevenue += transactions.get(j).getAmount();
+        if(chartRange.ZeroGap()) {
+            YearMonth yearMonth = YearMonth.now();
+            yearMonth = yearMonth.minusMonths(11);
+            ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+            long sum = 0;
+            for (int i = 0; i < 12; ++i) {
+                Count count = myUserRepository.countUsersJoinedOnMonth(yearMonth.getYear(), yearMonth.getMonthValue()).getUniqueMappedResult();
+                sum += (count != null ? count.getCount() : 0);
+                chartData.addPoint(yearMonth, sum, count != null ? count.getCount() : 0);
+                yearMonth = yearMonth.plusMonths(1);
             }
-
-            chartData.addYearMonthsCount(yearMonth, totalRevenue);
-            yearMonth = yearMonth.plusMonths(1);
+            genericResponse.setBody(chartData);
+        } else {
+            YearMonth yearMonth = YearMonth.of(chartRange.getStartYear(), chartRange.getStartMonth());
+            YearMonth endYearMonth = YearMonth.of(chartRange.getEndYear(), chartRange.getEndMonth());
+            ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+            long sum = 0;
+            while(!yearMonth.isAfter(endYearMonth)) {
+                Count count = myUserRepository.countUsersJoinedOnMonth(yearMonth.getYear(), yearMonth.getMonthValue()).getUniqueMappedResult();
+                sum += (count != null ? count.getCount() : 0);
+                chartData.addPoint(yearMonth, sum, count != null ? count.getCount() : 0);
+                yearMonth = yearMonth.plusMonths(1);
+            }
+            genericResponse.setBody(chartData);
         }
-        genericResponse.setBody(chartData);
 
+        return ResponseEntity.ok(genericResponse);
+    }
+
+    @PostMapping(path = "/revenuedata")
+    public ResponseEntity<GenericResponse> getRevenueData(@RequestBody ChartRange chartRange) {
+        GenericResponse genericResponse = new GenericResponse();
+
+        if(chartRange.ZeroGap()) {
+            YearMonth yearMonth = YearMonth.now();
+            yearMonth = yearMonth.minusMonths(11);
+            ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+            for(int i = 0; i < 12; ++i) {
+                List<Transaction> transactions = transactionRepository.getTransactionsOffYearMonth(yearMonth.getYear(), yearMonth.getMonthValue());
+                long totalRevenue = 0;
+                for(int j = 0; j < transactions.size(); j++) {
+                    totalRevenue += transactions.get(j).getAmount();
+                }
+
+                chartData.addYearMonthsCount(yearMonth, totalRevenue);
+                yearMonth = yearMonth.plusMonths(1);
+            }
+            genericResponse.setBody(chartData);
+        } else {
+            YearMonth yearMonth = YearMonth.of(chartRange.getStartYear(), chartRange.getStartMonth());
+            YearMonth endYearMonth = YearMonth.of(chartRange.getEndYear(), chartRange.getEndMonth());
+            ChartData chartData = new ChartData(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+            long sum = 0;
+            while(!yearMonth.isAfter(endYearMonth)) {
+                List<Transaction> transactions = transactionRepository.getTransactionsOffYearMonth(yearMonth.getYear(), yearMonth.getMonthValue());
+                long totalRevenue = 0;
+                for(int j = 0; j < transactions.size(); j++) {
+                    totalRevenue += transactions.get(j).getAmount();
+                }
+
+                chartData.addYearMonthsCount(yearMonth, totalRevenue);
+                yearMonth = yearMonth.plusMonths(1);
+            }
+            genericResponse.setBody(chartData);
+        }
         return ResponseEntity.ok(genericResponse);
     }
 }

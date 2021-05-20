@@ -1,5 +1,6 @@
 package com.example.project.Models;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.Id;
@@ -28,5 +29,9 @@ public class Trip {
 
     public boolean isCompleted() {
         return (endDateTime != null);
+    }
+
+    public int duration() {
+        return (int) Duration.between(this.startDateTime, this.endDateTime != null ? this.endDateTime : LocalDateTime.now()).toHours();
     }
 }
