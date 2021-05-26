@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -12,7 +15,7 @@ public class GeoLocation {
     private double longitude;
     private static final double EARTH_RADIUS = 6357;
 
-    public static  double distanceBetweenLocations(GeoLocation geoLocation0, GeoLocation geoLocation1) {
+    public static double distanceBetweenLocations(GeoLocation geoLocation0, GeoLocation geoLocation1) {
         double lon0 = Math.toRadians(geoLocation0.getLongitude());
         double lat0 = Math.toRadians(geoLocation0.getLatitude());
         double lon1 = Math.toRadians(geoLocation1.getLongitude());
@@ -27,6 +30,7 @@ public class GeoLocation {
 
         double distance = c * GeoLocation.EARTH_RADIUS;
 
-        return distance;
+//        return distance;
+        return BigDecimal.valueOf(distance).setScale(3, RoundingMode.FLOOR).doubleValue();
     }
 }

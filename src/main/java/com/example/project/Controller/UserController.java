@@ -10,17 +10,16 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 
 import com.example.project.Models.*;
+import com.example.project.Models.Dao.*;
 import com.example.project.Models.Forms.UpdateProfileForm;
-import com.example.project.Models.Dao.MyUserRepository;
-import com.example.project.Models.Dao.TransactionRepository;
-import com.example.project.Models.Dao.TripRepository;
-import com.example.project.Models.Dao.VehicleRepository;
 import com.example.project.Util.JwtUtil;
 
+import com.example.project.Util.MyUserDetailsService;
 import com.example.project.Util.Payment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,7 +32,9 @@ public class UserController {
     @Autowired private VehicleRepository vehicleRepository;
     @Autowired private TripRepository tripRepository;
     @Autowired private TransactionRepository transactionRepository;
+    @Autowired private JwtTokenRepository jwtTokenRepository;
     @Autowired private AuthenticationManager authenticationManager;
+    @Autowired private MyUserDetailsService myUserDetailsService;
     @Autowired private JwtUtil jwtUtil;
     @Autowired private Payment payment;
 
@@ -307,6 +308,7 @@ public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileF
         String jwt = authHeader.substring(7);
         String username = jwtUtil.extractUsername(jwt);
         MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
+        boolean jwtInvalidated = false;
 
         System.out.println("Multipart File: " + !(multipartFile == null || multipartFile.isEmpty()));
 
@@ -318,9 +320,12 @@ public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileF
         }
 
         if(!myUser.getEmailId().equals(updateProfileForm.getEmailId())) {
-            if(myUserRepository.findByEmailId(updateProfileForm.getEmailId()) != null) {
+            MyUser user = myUserRepository.findByEmailId(updateProfileForm.getEmailId()).orElse(null);
+            if(user != null) {
                 genericResponse.setError(true);
                 genericResponse.setErrorMessage("EmailId already exists.");
+            } else {
+                jwtInvalidated = true;
             }
         }
 
@@ -334,8 +339,20 @@ public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileF
         DriverLicense driverLicense = myUser.getDriverLicense();
         driverLicense.setLicenseNumber(updateProfileForm.getDriverLicenseNumber());
         myUser.setDriverLicense(driverLicense);
-
         myUserRepository.save(myUser);
+
+        if (jwtInvalidated) {
+            jwtTokenRepository.deleteById(username);
+
+            final UserDetails userDetails = myUserDetailsService.loadUserByUsername(myUser.getEmailId());
+            final String newJwt = jwtUtil.generateToken(userDetails);
+
+            JwtToken newJwtToken = new JwtToken(updateProfileForm.getEmailId(), newJwt);
+            jwtTokenRepository.insert(newJwtToken);
+
+            genericResponse.setBody(newJwt);
+        }
+
 
         return ResponseEntity.ok(genericResponse);
     }
