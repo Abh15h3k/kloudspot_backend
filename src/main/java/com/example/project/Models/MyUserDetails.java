@@ -49,7 +49,7 @@ public class MyUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return (this.accountStatus != AccountStatus.BLOCKED && this.accountStatus != AccountStatus.DL_BLOCKED);
+        return true;//(this.accountStatus != AccountStatus.BLOCKED && this.accountStatus != AccountStatus.DL_BLOCKED);
     }
 
     @Override

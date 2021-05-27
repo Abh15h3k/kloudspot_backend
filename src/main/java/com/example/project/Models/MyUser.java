@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "user")
@@ -37,6 +38,7 @@ public class MyUser {
     private List<String> transactions;
 
     private String orderId;
+    private LocalDateTime joinDate;
 
     public void addTripId(String tripId) {
         this.tripIds.add(tripId);

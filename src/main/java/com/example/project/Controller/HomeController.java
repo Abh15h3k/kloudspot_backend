@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
@@ -155,7 +156,7 @@ public class HomeController {
         } else {
 
             MyUser myUser = new MyUser(aadhar, fullName, emailId, new BCryptPasswordEncoder().encode(password), new DriverLicense(dlNumber, null),
-                    Arrays.asList(UserRole.USER), AccountStatus.PROCESSING, null, null, new ArrayList<>(), new ArrayList<>(), null);
+                    Arrays.asList(UserRole.USER), AccountStatus.PROCESSING, null, null, new ArrayList<>(), new ArrayList<>(), null, LocalDateTime.now());
             try {
                 DriverLicense driverLicense = myUser.getDriverLicense();
                 driverLicense.setImageData(dlImage.getBytes());

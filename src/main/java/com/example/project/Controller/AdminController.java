@@ -372,7 +372,6 @@ public class AdminController {
     @PostMapping(path = "/userdata")
     public ResponseEntity<GenericResponse> getUserData(@RequestBody ChartRange chartRange) {
         GenericResponse genericResponse = new GenericResponse();
-        System.out.println(chartRange);
 
         if(chartRange.ZeroGap()) {
             YearMonth yearMonth = YearMonth.now();

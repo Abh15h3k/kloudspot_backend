@@ -51,9 +51,15 @@ public class UserController {
         String username = jwtUtil.extractUsername(jwt);
         MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
 
-        if(myUser.getAccountStatus() == AccountStatus.PROCESSING) {
+        if(myUser.getAccountStatus() != AccountStatus.ACTIVE) {
             genericResponse.setError(true);
-            genericResponse.setErrorMessage("Your account is still being processed. Please try again later.");
+            if (myUser.getAccountStatus() == AccountStatus.PROCESSING) {
+                genericResponse.setErrorMessage("Your account is still being processed. Please try again later.");
+            } else if(myUser.getAccountStatus() == AccountStatus.BLOCKED) {
+                genericResponse.setErrorMessage("Your account account has been Blocked.");
+            } else if(myUser.getAccountStatus() == AccountStatus.DL_BLOCKED) {
+                genericResponse.setErrorMessage("Your account account has been Blocked due to an issue with your Driver License.");
+            }
             return ResponseEntity.ok(genericResponse);
         }
 
@@ -107,8 +113,6 @@ public class UserController {
         String username = jwtUtil.extractUsername(jwt);
         MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
 
-        System.out.println("OrderId: " + orderId + ", PaymentId: " + paymentId);
-
         if (myUser.getReservedVehicle() == null) {
             genericResponse.setError(true);
             genericResponse.setErrorMessage("You currently do not have any reserved vehicle.");
@@ -127,7 +131,6 @@ public class UserController {
             myUser.setReservedVehicle(null);
 
             Trip trip = myUser.getActiveTrip();
-            System.out.println(trip);
             trip.setEndDateTime(LocalDateTime.now());
 
             myUser.setOrderId(null);
@@ -310,7 +313,7 @@ public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileF
         MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
         boolean jwtInvalidated = false;
 
-        System.out.println("Multipart File: " + !(multipartFile == null || multipartFile.isEmpty()));
+//        System.out.println("Multipart File: " + !(multipartFile == null || multipartFile.isEmpty()));
 
         if(!myUser.getAadhar().equals(updateProfileForm.getAadhar())) {
             if(myUserRepository.findById(updateProfileForm.getAadhar()).isPresent()) {

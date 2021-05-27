@@ -50,10 +50,8 @@ public class VehicleController {
             } else {
                 return true;
             }
-//            return ( > vehicleNearMe.getRadius());
         });
 
-        System.out.println(vehicles.isEmpty());
         if (vehicles.isEmpty()) {
             genericResponse.setError(true);
             genericResponse.setErrorMessage("No Vehicles near by");
