@@ -19,6 +19,7 @@ import com.example.project.Util.Payment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -305,7 +306,7 @@ public class UserController {
     }
 
     @PostMapping(path = "/updateprofile")
-public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileForm updateProfileForm, @RequestParam(required = false) MultipartFile multipartFile, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileForm updateProfileForm, @RequestParam(required = false) MultipartFile multipartFile, HttpServletRequest httpServletRequest) {
         GenericResponse genericResponse = new GenericResponse();
         String authHeader = httpServletRequest.getHeader("Authorization");
         String jwt = authHeader.substring(7);
@@ -360,5 +361,35 @@ public ResponseEntity<GenericResponse> updateProfile(@RequestBody UpdateProfileF
         return ResponseEntity.ok(genericResponse);
     }
 
+    @PostMapping(path = "/setlanguage")
+    public ResponseEntity<GenericResponse> setLanguagePreference(@RequestParam(name="language") String language, HttpServletRequest httpServletRequest) {
+        GenericResponse genericResponse = new GenericResponse();
 
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        String jwt = authHeader.substring(7);
+        String username = jwtUtil.extractUsername(jwt);
+        MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
+
+        myUser.setLanguage(language);
+
+        myUserRepository.save(myUser);
+
+        return ResponseEntity.ok(genericResponse);
+    }
+
+    @PostMapping(path = "/settheme")
+    ResponseEntity<GenericResponse> setThemePreference(@RequestParam(name = "darkMode") boolean darkMode, HttpServletRequest httpServletRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        String jwt = authHeader.substring(7);
+        String username = jwtUtil.extractUsername(jwt);
+        MyUser myUser = myUserRepository.findByEmailId(username).orElse(null);
+
+        myUser.setDarkMode(darkMode);
+
+        myUserRepository.save(myUser);
+
+        return ResponseEntity.ok(genericResponse);
+    }
 }

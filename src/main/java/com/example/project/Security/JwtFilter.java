@@ -40,8 +40,6 @@ public class JwtFilter extends OncePerRequestFilter {
         String jwt = null;
         UserDetails userDetails = null;
 
-        System.out.println("ONE");
-
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
             try {
@@ -65,8 +63,6 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         }
 
-        System.out.println("TWO");
-
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
@@ -83,7 +79,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 return;
             }
         }
-        System.out.println("THREE");
         filterChain.doFilter(httpServletRequest, httpServletResponse);
     }
 }

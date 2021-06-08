@@ -66,11 +66,13 @@ public class HomeController {
 
         final UserDetails userDetails = myUserDetailsService.loadUserByUsername(authRequest.getUsername());
 
+        String jwt = null;
         if (jwtToken != null) {
             try {
                 if (jwtUtil.validateToken(jwtToken.getToken(), userDetails)) {
-                    genericResponse.setBody(jwtToken.getToken());
-                    return ResponseEntity.ok(genericResponse);
+                    jwt = jwtToken.getToken();
+//                    genericResponse.setBody(jwtToken.getToken());
+//                    return ResponseEntity.ok(genericResponse);
                 } else {
                     jwtTokenRepository.delete(jwtToken);
                 }
@@ -79,10 +81,19 @@ public class HomeController {
             }
         }
 
-        final String jwt = jwtUtil.generateToken(userDetails);
-        genericResponse.setBody(jwt);
+        MyUser myUser = myUserRepository.findByEmailId(userDetails.getUsername()).orElse(null);
 
-        jwtTokenRepository.insert(new JwtToken(authRequest.getUsername(), jwt));
+        if (jwt == null) {
+            jwt = jwtUtil.generateToken(userDetails);
+            jwtTokenRepository.insert(new JwtToken(authRequest.getUsername(), jwt));
+        }
+        final String lang = myUser.getLanguage();
+        final boolean darkMode = myUser.isDarkMode();
+
+        LoginResponse loginResponse = new LoginResponse(jwt, darkMode, lang);
+
+        genericResponse.setBody(loginResponse);
+
 
         return ResponseEntity.ok(genericResponse);
     }
@@ -156,7 +167,7 @@ public class HomeController {
         } else {
 
             MyUser myUser = new MyUser(aadhar, fullName, emailId, new BCryptPasswordEncoder().encode(password), new DriverLicense(dlNumber, null),
-                    Arrays.asList(UserRole.USER), AccountStatus.PROCESSING, null, null, new ArrayList<>(), new ArrayList<>(), null, LocalDateTime.now());
+                    Arrays.asList(UserRole.USER), AccountStatus.PROCESSING, null, null, new ArrayList<>(), new ArrayList<>(), null, LocalDateTime.now(), false, "en");
             try {
                 DriverLicense driverLicense = myUser.getDriverLicense();
                 driverLicense.setImageData(dlImage.getBytes());

@@ -40,6 +40,9 @@ public class MyUser {
     private String orderId;
     private LocalDateTime joinDate;
 
+    private boolean darkMode;
+    private String language = "en";
+
     public void addTripId(String tripId) {
         this.tripIds.add(tripId);
     }
